@@ -1,5 +1,7 @@
 use std::io::Write;
 
+mod builtins;
+
 const RED: &'static str = "\x1B[31m";
 const GRN: &'static str = "\x1B[32m";
 
@@ -9,15 +11,14 @@ fn log_fatal(errmsg: std::io::Error) {
 }
 
 fn main() {
-    // Store the previous return value.
-    let mut status: bool = true;
+    // Store the previous process return value.
+    let mut prev_ret: bool = true;
 
     loop {
-        let cwd = std::env::current_dir()
-            .unwrap();
+        let cwd = std::env::current_dir().unwrap();
 
-        print!("{}\x1B[1m=(V)..(V)=\x1B[0m {}\n$ ",
-            if status { GRN } else { RED },
+        print!("{}\x1B[1m=(V),,(V)=\x1B[0m {}\n$ ",
+            if prev_ret { GRN } else { RED },
             cwd.display());
         let _ = std::io::stdout().flush();
 
@@ -35,30 +36,39 @@ fn main() {
             input.pop();
         } else {
             // No newline?  So it is the EOF so continue the loop.
-            println!("");
+            print!("\n");
             continue;
         }
 
-        // Start the command.
-        let mut args_it = input.split(" ");
+        /* Start the command. */
+
+        let mut args_it = input.trim().split(" ");
+        // Is it a built-in command?
+        if let Ok(_) = builtins::run(args_it.clone()) {
+            prev_ret = true;
+            continue;
+        }
+
         let cmd = args_it.next().unwrap();
         let mut child = std::process::Command::new(cmd);
-        for arg in args_it { child.arg(arg); }
+        for arg in args_it {
+            if !arg.is_empty() { child.arg(arg); }
+        }
 
         match child.spawn() {
             Ok(mut child) => {
                 match child.wait() {
                     Ok(ecode) => {
-                        status = ecode.success();
+                        prev_ret = ecode.success();
                     },
                     Err(e) => log_fatal(e)
                 };
             },
-            // Ignore ErrorKind NotFound, and fatally log other kinds.
             Err(e) => {
+                // Ignore ErrorKind NotFound, and fatally log other kinds.
                 if e.kind() == std::io::ErrorKind::NotFound {
-                    println!("{}", e);
-                    status = false;
+                    println!("{}: command not found", cmd);
+                    prev_ret = false;
                 } else {
                     log_fatal(e);
                 }
