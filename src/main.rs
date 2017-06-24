@@ -15,17 +15,20 @@ fn main() {
         let mut input = String::new();
         match std::io::stdin().read_line(&mut input) {
             Ok(n) => {
-                if input.is_empty() {
-                    // EOF and no bytes read.
-                    if n == 0 { break; }
-                    else { continue; }
-                }
+                // EOF and no bytes read.
+                if n == 0 && input.is_empty() { break; }
             },
             Err(e) => log_fatal(e)
         }
 
-        // Strip the newline.
-        if let Some('\n') = input.chars().next_back() { input.pop(); }
+        if let Some('\n') = input.chars().next_back() {
+            // Strip the newline.
+            input.pop();
+        } else {
+            // No newline?  So it is the EOF so continue the loop.
+            println!("");
+            continue;
+        }
 
         // Start the command.
         let mut args_it = input.split(" ");
