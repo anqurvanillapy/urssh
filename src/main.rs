@@ -1,15 +1,24 @@
 use std::io::Write;
 
+const RED: &'static str = "\x1B[31m";
+const GRN: &'static str = "\x1B[32m";
+
 fn log_fatal(errmsg: std::io::Error) {
     eprintln!("{}", errmsg);
     std::process::exit(1);
 }
 
 fn main() {
+    // Store the previous return value.
+    let mut status: bool = true;
+
     loop {
         let cwd = std::env::current_dir()
             .unwrap();
-        print!("\x1B[31m\x1B[1m=(V)..(V)=\x1B[0m {}\n$ ", cwd.display());
+
+        print!("{}\x1B[1m=(V)..(V)=\x1B[0m {}\n$ ",
+            if status { GRN } else { RED },
+            cwd.display());
         let _ = std::io::stdout().flush();
 
         let mut input = String::new();
@@ -40,7 +49,7 @@ fn main() {
             Ok(mut child) => {
                 match child.wait() {
                     Ok(ecode) => {
-                        assert!(ecode.success());
+                        status = ecode.success();
                     },
                     Err(e) => log_fatal(e)
                 };
@@ -49,6 +58,7 @@ fn main() {
             Err(e) => {
                 if e.kind() == std::io::ErrorKind::NotFound {
                     println!("{}", e);
+                    status = false;
                 } else {
                     log_fatal(e);
                 }
