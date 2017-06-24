@@ -1,6 +1,6 @@
 # urssh
 
-A Unix shell in Rust.
+A minimal Unix shell in Rust.
 
 ## License
 
