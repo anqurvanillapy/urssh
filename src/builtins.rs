@@ -1,12 +1,12 @@
 use std::str::Split;
 
-pub fn run(s: Split<&str>) -> Result<(), ()> {
-    let mut args_it = s;
+use cd;
 
-    match args_it.next() {
-        Some("cd") => println!("cd!"),
-        _ => return Err(())
+pub fn run(mut args_it: Split<&str>) -> Result<bool, ()> {
+    let ret = match args_it.next() {
+        Some("cd") => Ok(cd::run(args_it)),
+        _ => Err(())
     };
 
-    Ok(())
+    ret
 }

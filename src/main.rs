@@ -1,14 +1,11 @@
 use std::io::Write;
 
+mod log;
 mod builtins;
+mod cd;
 
 const RED: &'static str = "\x1B[31m";
 const GRN: &'static str = "\x1B[32m";
-
-fn log_fatal(errmsg: std::io::Error) {
-    eprintln!("{}", errmsg);
-    std::process::exit(1);
-}
 
 fn main() {
     // Store the previous process return value.
@@ -28,7 +25,7 @@ fn main() {
                 // EOF and no bytes read.
                 if n == 0 && input.is_empty() { break; }
             },
-            Err(e) => log_fatal(e)
+            Err(e) => log::log_fatal(e)
         }
 
         if let Some('\n') = input.chars().next_back() {
@@ -40,12 +37,15 @@ fn main() {
             continue;
         }
 
+        // Is it an empty command?
+        if input.is_empty() { continue; }
+
         /* Start the command. */
 
         let mut args_it = input.trim().split(" ");
         // Is it a built-in command?
-        if let Ok(_) = builtins::run(args_it.clone()) {
-            prev_ret = true;
+        if let Ok(ret) = builtins::run(args_it.clone()) {
+            prev_ret = ret;
             continue;
         }
 
@@ -61,7 +61,7 @@ fn main() {
                     Ok(ecode) => {
                         prev_ret = ecode.success();
                     },
-                    Err(e) => log_fatal(e)
+                    Err(e) => log::log_fatal(e)
                 };
             },
             Err(e) => {
@@ -70,9 +70,9 @@ fn main() {
                     println!("{}: command not found", cmd);
                     prev_ret = false;
                 } else {
-                    log_fatal(e);
+                    log::log_fatal(e);
                 }
             }
-        };
-    }
+        }
+    } /* loop */
 }
