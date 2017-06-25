@@ -14,6 +14,7 @@ pub fn run(mut args: std::str::Split<&str>) -> bool {
                 }
             } else {
                 eprintln!("Warning: failed to get home dir");
+                return false;
             }
         },
         1 => {
